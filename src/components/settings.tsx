@@ -37,17 +37,17 @@ export function Settings() {
       data.preprocessText = false;
     }
 
-    console.log('Saving settings:', data, Array.from(formdata.entries()));
     await chrome.storage.local.set(data);
+    setSettings(data as any);
     updateStatus('Settings saved!', false);
   }
 
   return (
     <>
-      <form id="settings-form" className="settings-panel" onChange={saveSettings}>
+      <div id="settings-form" className="settings-panel">
         <div className="setting-group">
           <label htmlFor="voice">Voice</label>
-          <select name="voice" defaultValue={settings.voice}>
+          <select name="voice" value={settings.voice} onChange={saveSettings}>
             <option value="am_adam">Adam (Alloy)</option>
             <option value="af_nicole">Nicole (Ash)</option>
             <option value="bf_emma">Emma (Coral)</option>
@@ -64,30 +64,30 @@ export function Settings() {
           <label htmlFor="speed">Speed</label>
           <div className="slider-container">
             <input type="range" name="speed" className="slider"
-              min="0.25" max="4.0" step="0.25" defaultValue={settings.speed.toString()} />
+              min="0.25" max="4.0" step="0.25" value={settings.speed.toString()} onChange={saveSettings} />
             <span className="speed-value">{`${settings.speed}x`}</span>
           </div>
         </div>
 
         <div className="setting-group checkbox-group">
           <label className="checkbox-label">
-            <input type="checkbox" name="recordAudio" defaultChecked={settings.recordAudio} /> Save audio for download
+            <input type="checkbox" name="recordAudio" checked={settings.recordAudio} onChange={saveSettings} /> Save audio for download
           </label>
           <div className="helper-text">Audio will be available to download after playback completes or when stopped.</div>
         </div>
 
         <div className="setting-group checkbox-group">
           <label className="checkbox-label">
-            <input type="checkbox" name="preprocessText" defaultChecked={settings.preprocessText} /> Pre-process text for TTS
+            <input type="checkbox" name="preprocessText" checked={settings.preprocessText} onChange={saveSettings} /> Pre-process text for TTS
           </label>
           <div className="helper-text">Removes markdown, cleans up URLs, and improves text for better speech output.</div>
         </div>
 
         <div className="setting-group">
           <label htmlFor="serverUrl">Server URL</label>
-          <input type="text" name="serverUrl" defaultValue={settings.serverUrl} />
+          <input type="text" name="serverUrl" value={settings.serverUrl} onChange={saveSettings} />
         </div>
-      </form>
+      </div>
       <div id="status"></div>
     </>
   )
