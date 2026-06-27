@@ -37,8 +37,8 @@ export function Settings() {
       data.preprocessText = false;
     }
 
-    await chrome.storage.local.set(data);
     setSettings(data as any);
+    await chrome.storage.local.set(data);
     updateStatus('Settings saved!', false);
   }
 
