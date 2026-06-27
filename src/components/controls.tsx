@@ -34,8 +34,11 @@ function updateControlButtons(state: string, currentAudioUrl: string | null):Con
       controlsState.downloadDisabled = true;
       controlsState.loading = true;
       break;
-    case 'ready':
     case 'playing':
+      controlsState.playDisabled = true;
+      controlsState.pauseDisabled = false;
+      break;
+    case 'ready':
     case 'paused':
     case 'stopped': {
       controlsState.playDisabled = false;
