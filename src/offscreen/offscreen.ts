@@ -118,7 +118,6 @@ function getTimeInfo() {
 function seekTo(time: number) {
   const audioElement = document.getElementById('audioElement') as HTMLAudioElement;
   audioElement.currentTime = time;
-  return true;
 }
 
 // Handle messages from the background script
@@ -148,8 +147,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       break;
 
     case 'seek': {
-      const success = seekTo(message.time);
-      sendResponse({ success });
+      seekTo(message.time);
       return true;
     }
     case 'getTimeInfo':

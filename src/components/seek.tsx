@@ -41,7 +41,6 @@ export function Seek() {
     if (playState !== 'playing') return;
     const interval = setInterval(async () => {
       const audioPlayer = audioPlayerInstance;
-      if (!audioPlayer) return;
 
       const timeInfo = await audioPlayer.getTimeInfo();
       if (timeInfo && !isSeeking) {
@@ -65,7 +64,8 @@ export function Seek() {
   // When user finishes seeking
   const handleMouseUp = async () => {
     const newTime = currentTime;
-    await globalThis.audioPlayer?.seek(newTime);
+    const audioPlayer = audioPlayerInstance;
+    audioPlayer.seek(newTime);
     setIsSeeking(false);
   };
 

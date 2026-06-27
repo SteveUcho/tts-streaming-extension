@@ -88,13 +88,8 @@ export class AudioPlayer {
 
   async seek(time: number) {
     if (this.isInitialized) {
-      return new Promise((resolve) => {
-        chrome.runtime.sendMessage({ type: 'seek', time: time }, (response) => {
-          resolve(response?.success ?? false);
-        });
-      });
+      chrome.runtime.sendMessage({ type: 'seek', time: time });
     }
-    return false;
   }
 
   async getState(): Promise<string> {
