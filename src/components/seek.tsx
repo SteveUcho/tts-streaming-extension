@@ -37,20 +37,20 @@ export function Seek() {
     }
   }, [playState]);
 
-  // useEffect(() => {
-  //   if (playState !== 'playing') return;
-  //   const interval = setInterval(async () => {
-  //     const audioPlayer = audioPlayerInstance;
-  //     if (!audioPlayer) return;
+  useEffect(() => {
+    if (playState !== 'playing') return;
+    const interval = setInterval(async () => {
+      const audioPlayer = audioPlayerInstance;
+      if (!audioPlayer) return;
 
-  //     const timeInfo = await audioPlayer.getTimeInfo();
-  //     if (timeInfo && !isSeeking) {
-  //       setDuration(timeInfo.duration);
-  //       setCurrentTime(timeInfo.currentTime);
-  //     }
-  //   }, 1000);
-  //   return () => clearInterval(interval);
-  // }, [isSeeking, playState]);
+      const timeInfo = await audioPlayer.getTimeInfo();
+      if (timeInfo && !isSeeking) {
+        setDuration(timeInfo.duration);
+        setCurrentTime(timeInfo.currentTime);
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, [isSeeking, playState]);
 
   // When user starts seeking
   const handleMouseDown = () => {

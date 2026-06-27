@@ -21,7 +21,6 @@ export class AudioPlayer {
     }
   }
 
-  //TODO move play logic from controls.tsx to here
   async play(): Promise<string> {
     await this.init();
 

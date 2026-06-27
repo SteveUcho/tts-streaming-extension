@@ -184,7 +184,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     case 'getTimeInfo':
       chrome.runtime.sendMessage({
         type: 'getTimeInfo'
-      }, (response) => {
+      }).then((response) => {
         sendResponse(response);
       });
       return true;

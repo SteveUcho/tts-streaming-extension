@@ -1,36 +1,24 @@
-let audioContext: AudioContext | null = null;
+let audioSourceNode: MediaElementAudioSourceNode | null = null;
+const audioContext = new (globalThis.AudioContext || (globalThis as any).webkitAudioContext)();
 
-let audioSource: MediaElementAudioSourceNode | null = null;
-let hasSourceConnected = false;
+function setupAudioNode(context: AudioContext, audioElement: HTMLAudioElement) {
+  // If it already exists, just return the existing node
+  if (audioSourceNode) {
+    return audioSourceNode;
+  }
+
+  // Otherwise, create it and store it
+  audioSourceNode = context.createMediaElementSource(audioElement);
+  return audioSourceNode;
+}
 
 // Initialize the audio context
 function initAudio() {
-  audioContext = audioContext || new (globalThis.AudioContext || (globalThis as any).webkitAudioContext)();
   const audioElement = document.getElementById('audioElement') as HTMLAudioElement;
   // Set up event listeners
   audioElement.onplay = () => {
-    if (!audioContext || !audioElement) return;
-
-    // Connect to audio context only once
-    if (!hasSourceConnected) {
-      try {
-        // Disconnect previous source if it exists
-        if (audioSource) {
-          try {
-            audioSource.disconnect();
-          } catch (e) {
-            // Ignore errors if already disconnected
-          }
-        }
-
-        // Create and connect new source
-        audioSource = audioContext.createMediaElementSource(audioElement);
-        audioSource.connect(audioContext.destination);
-        hasSourceConnected = true;
-      } catch (e) {
-        console.error('Error connecting audio source:', e);
-      }
-    }
+    const sourceNode = setupAudioNode(audioContext, audioElement);
+    sourceNode.connect(audioContext.destination);
 
     chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'playing' });
   };
@@ -41,7 +29,6 @@ function initAudio() {
 
   audioElement.onended = () => {
     chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'stopped' });
-    chrome.runtime.sendMessage({ type: 'streamComplete' });
   };
 
   // Add timeupdate event for seeking
@@ -95,15 +82,8 @@ function processAudioData(audioDataArray: number[], mimeType: string, isRecordin
 // Play audio from URL
 function playAudioUrl(audioUrl: string) {
   const audioElement = document.getElementById('audioElement') as HTMLAudioElement;
-  if (!audioContext) {
-    console.error('Audio element or context not found');
-    return;
-  }
   try {
     console.log('Playing audio URL:', audioUrl);
-
-    // Reset connection flag
-    hasSourceConnected = false;
 
     // Set up audio element
     audioElement.src = audioUrl;
