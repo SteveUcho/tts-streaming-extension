@@ -39,6 +39,9 @@ export default function App() {
 
   useEffect(() => {
     audioPlayer.init();
+    audioPlayer.getState().then(state => {
+      setPlayState(state);
+    });
     // Listen for messages from background script
     chrome.runtime.onMessage.addListener(handleBackgroundMessage);
     return () => {
