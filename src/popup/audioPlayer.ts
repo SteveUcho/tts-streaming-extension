@@ -32,6 +32,7 @@ export class AudioPlayer {
         this.resume();
         return "playing";
       }
+      this.audioUrl = null;
       let text = await getHighlightText();
       const settings = await chrome.storage.local.get({
         serverUrl: DEFAULT_SETTINGS.serverUrl,

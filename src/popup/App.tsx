@@ -8,8 +8,6 @@ import { useSetAtom } from 'jotai'
 import { playStateAtom } from '@/utils/atoms'
 import { updateStatus } from '@/utils/dom'
 
-
-
 export default function App() {
   const setPlayState = useSetAtom(playStateAtom)
 

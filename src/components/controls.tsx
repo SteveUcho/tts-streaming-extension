@@ -74,7 +74,8 @@ export function Controls() {
     const updateControls = async () => {
       const highlightText = await getHighlightText();
       const hasHighlight = highlightText.length > 0;
-      const newState = updateControlButtons(playState, audioPlayer.audioUrl, hasHighlight);
+      const currentAudioUrl = audioPlayer.audioUrl;
+      const newState = updateControlButtons(playState, currentAudioUrl, hasHighlight);
       setControlsState(newState);
     };
     updateControls();
