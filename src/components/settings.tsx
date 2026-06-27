@@ -18,7 +18,7 @@ export function Settings() {
   }, []);
 
   const saveSettings = async () => {
-    const form  = document.getElementById('settings-form') as HTMLFormElement;
+    const form = document.getElementById('settings-form') as HTMLFormElement;
     const formdata = new FormData(form);
     const data: Record<string, string | number | boolean> = {};
     for (const [key, value] of formdata.entries()) {
@@ -43,52 +43,49 @@ export function Settings() {
   }
 
   return (
-    <>
-      <div id="settings-form" className="settings-panel">
-        <div className="setting-group">
-          <label htmlFor="voice">Voice</label>
-          <select name="voice" value={settings.voice} onChange={saveSettings}>
-            <option value="am_adam">Adam (Alloy)</option>
-            <option value="af_nicole">Nicole (Ash)</option>
-            <option value="bf_emma">Emma (Coral)</option>
-            <option value="af_bella">Bella (Echo)</option>
-            <option value="af_sarah">Sarah (Fable)</option>
-            <option value="bm_george">George (Onyx)</option>
-            <option value="bf_isabella">Isabella (Nova)</option>
-            <option value="am_michael">Michael (Sage)</option>
-            <option value="af_sky">Sky (Shimmer)</option>
-          </select>
-        </div>
+    <form id="settings-form" className="settings-panel">
+      <div className="setting-group">
+        <label htmlFor="voice">Voice</label>
+        <select name="voice" value={settings.voice} onChange={saveSettings}>
+          <option value="am_adam">Adam (Alloy)</option>
+          <option value="af_nicole">Nicole (Ash)</option>
+          <option value="bf_emma">Emma (Coral)</option>
+          <option value="af_bella">Bella (Echo)</option>
+          <option value="af_sarah">Sarah (Fable)</option>
+          <option value="bm_george">George (Onyx)</option>
+          <option value="bf_isabella">Isabella (Nova)</option>
+          <option value="am_michael">Michael (Sage)</option>
+          <option value="af_sky">Sky (Shimmer)</option>
+        </select>
+      </div>
 
-        <div className="setting-group">
-          <label htmlFor="speed">Speed</label>
-          <div className="slider-container">
-            <input type="range" name="speed" className="slider"
-              min="0.25" max="4.0" step="0.25" value={settings.speed.toString()} onChange={saveSettings} />
-            <span className="speed-value">{`${settings.speed}x`}</span>
-          </div>
-        </div>
-
-        <div className="setting-group checkbox-group">
-          <label className="checkbox-label">
-            <input type="checkbox" name="recordAudio" checked={settings.recordAudio} onChange={saveSettings} /> Save audio for download
-          </label>
-          <div className="helper-text">Audio will be available to download after playback completes or when stopped.</div>
-        </div>
-
-        <div className="setting-group checkbox-group">
-          <label className="checkbox-label">
-            <input type="checkbox" name="preprocessText" checked={settings.preprocessText} onChange={saveSettings} /> Pre-process text for TTS
-          </label>
-          <div className="helper-text">Removes markdown, cleans up URLs, and improves text for better speech output.</div>
-        </div>
-
-        <div className="setting-group">
-          <label htmlFor="serverUrl">Server URL</label>
-          <input type="text" name="serverUrl" value={settings.serverUrl} onChange={saveSettings} />
+      <div className="setting-group">
+        <label htmlFor="speed">Speed</label>
+        <div className="slider-container">
+          <input type="range" name="speed" className="slider"
+            min="0.25" max="4.0" step="0.25" value={settings.speed.toString()} onChange={saveSettings} />
+          <span className="speed-value">{`${settings.speed}x`}</span>
         </div>
       </div>
-      <div id="status"></div>
-    </>
+
+      <div className="setting-group checkbox-group">
+        <label className="checkbox-label">
+          <input type="checkbox" name="recordAudio" checked={settings.recordAudio} onChange={saveSettings} /> Save audio for download
+        </label>
+        <div className="helper-text">Audio will be available to download after playback completes or when stopped.</div>
+      </div>
+
+      <div className="setting-group checkbox-group">
+        <label className="checkbox-label">
+          <input type="checkbox" name="preprocessText" checked={settings.preprocessText} onChange={saveSettings} /> Pre-process text for TTS
+        </label>
+        <div className="helper-text">Removes markdown, cleans up URLs, and improves text for better speech output.</div>
+      </div>
+
+      <div className="setting-group">
+        <label htmlFor="serverUrl">Server URL</label>
+        <input type="text" name="serverUrl" value={settings.serverUrl} onChange={saveSettings} />
+      </div>
+    </form>
   )
 }

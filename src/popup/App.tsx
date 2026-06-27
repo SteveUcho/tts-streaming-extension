@@ -49,10 +49,11 @@ export default function App() {
   }, []);
 
   return (
-    <>
+    <div>
       <Controls />
       <Seek />
       <Settings />
-    </>
+      <div id="status"></div>
+    </div>
   )
 }
