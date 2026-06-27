@@ -1,7 +1,6 @@
 # React + Vite + CRXJS
 
-based off previous work done by @phildougherty
-https://github.com/phildougherty/local_tts_reader
+based off previous work done by @phildougherty https://github.com/phildougherty/local_tts_reader
 
 ## Notable Differences
 
@@ -28,16 +27,13 @@ A sleek Chrome extension that converts webpage text to speech using a local Open
 
 ## Installation
 
-1. Clone this repository:
-```bash
-git clone https://github.com/steveucho/tts-streaming-extension.git
-```
+1. Download Release from https://github.com/steveucho/tts-streaming-extension/releases
 
 2. Load the extension in Chrome:
    - Open Chrome and navigate to `chrome://extensions/`
    - Enable "Developer mode" in the top right
    - Click "Load unpacked"
-   - Select the cloned repository folder
+   - Select the downloaded release folder
 
 ## Usage
 
