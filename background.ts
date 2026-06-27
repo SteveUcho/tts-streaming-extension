@@ -44,9 +44,10 @@ function setupContextMenu() {
 // Handle context menu clicks
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "readAloud") {
-    let text = info.selectionText || "";
+    let text = info.selectionText;
 
-    if (!text) {
+    if (text) {
+      processAndReadText(text, tab?.id);
       // If no text is selected, get the page content
       // chrome.scripting.executeScript({
       //   target: { tabId: tab?.id },
@@ -58,10 +59,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
       //     processAndReadText(results[0].result, tab.id);
       //   }
       // });
-      return;
-    } else {
-      // Use the selected text
-      processAndReadText(text, tab?.id);
     }
   }
 });
@@ -73,7 +70,7 @@ async function processAndReadText(text: string, tabId: number | undefined) {
     const settings = await chrome.storage.local.get({
       serverUrl: 'http://localhost:8000/v1/audio/speech',
       voice: 'af_bella',
-      speed: 1.0,
+      speed: 1,
       recordAudio: false,
       preprocessText: true
     });
@@ -211,7 +208,7 @@ async function startStreamingAudio(text: string, settings: any) {
         model: 'tts-1',
         voice: settings.voice,
         input: text,
-        speed: parseFloat(settings.speed)
+        speed: Number.parseFloat(settings.speed)
       })
     });
 

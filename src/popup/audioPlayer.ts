@@ -1,5 +1,6 @@
 import { TextProcessor } from "@/textProcessor";
 import { DEFAULT_SETTINGS } from "./constants";
+import { getHighlightText } from "@/utils/getHighlightText";
 
 // Process text based on settings
 function processText(text: string, settings: any) {
@@ -31,18 +32,7 @@ export class AudioPlayer {
         this.resume();
         return "playing";
       }
-      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-      const [tab] = tabs;
-      if (!tab?.id) return "stopped";
-      const result = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: () => {
-          const selection = globalThis.getSelection();
-          return selection?.toString().trim() || document.body.innerText;
-        },
-      });
-
-      let text = result[0].result ?? "";
+      let text = await getHighlightText();
       const settings = await chrome.storage.local.get({
         serverUrl: DEFAULT_SETTINGS.serverUrl,
         voice: DEFAULT_SETTINGS.voice,

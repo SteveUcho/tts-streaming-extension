@@ -1,8 +1,9 @@
 import { useAtom } from "jotai";
 import { playStateAtom } from "@/utils/atoms";
-import { DEFAULT_SETTINGS } from "@/popup/constants";
 import { updateStatus } from "@/utils/dom";
 import { audioPlayer as audioPlayerInstance } from "@/popup/audioPlayer";
+import { useEffect, useState } from "react";
+import { getHighlightText } from "@/utils/getHighlightText";
 
 
 interface ControlsState {
@@ -13,15 +14,15 @@ interface ControlsState {
   loading: boolean;
 }
 
-function updateControlButtons(state: string, currentAudioUrl: string | null):ControlsState {
+function updateControlButtons(state: string, currentAudioUrl: string | null, hasHighlight: boolean): ControlsState {
   const controlsState: ControlsState = {
-    playDisabled: false,
+    playDisabled: true,
     pauseDisabled: true,
     stopDisabled: false,
     downloadDisabled: true,
     loading: false,
   };
-  
+
   // Stop button is always enabled (except during loading)
   controlsState.stopDisabled = state === 'loading';
   // not loading unless loading
@@ -51,14 +52,33 @@ function updateControlButtons(state: string, currentAudioUrl: string | null):Con
       controlsState.pauseDisabled = true;
       controlsState.downloadDisabled = true;
   }
+  if (!hasHighlight) {
+    controlsState.playDisabled = true;
+  }
   return controlsState;
 }
 
 export function Controls() {
   const [playState, setPlayState] = useAtom(playStateAtom)
+  const [controlsState, setControlsState] = useState<ControlsState>({
+    playDisabled: true,
+    pauseDisabled: true,
+    stopDisabled: false,
+    downloadDisabled: true,
+    loading: false,
+  });
 
   const audioPlayer = audioPlayerInstance;
-  const controlsState = updateControlButtons(playState, audioPlayer.audioUrl);
+
+  useEffect(() => {
+    const updateControls = async () => {
+      const highlightText = await getHighlightText();
+      const hasHighlight = highlightText.length > 0;
+      const newState = updateControlButtons(playState, audioPlayer.audioUrl, hasHighlight);
+      setControlsState(newState);
+    };
+    updateControls();
+  }, [playState]);
 
   const handlePlayClick = async () => {
     setPlayState('loading');
