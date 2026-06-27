@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Audio Player</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #000;
+      overflow: hidden;
+    }
+    
+    #audioElement {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <audio id="audioElement" controls></audio>
+  <script type="module" src="./offscreen.ts"></script>
+</body>
+</html>

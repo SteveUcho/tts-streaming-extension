@@ -5,24 +5,29 @@ export default defineManifest({
   manifest_version: 3,
   name: pkg.name,
   version: pkg.version,
+  description: "Reads webpage content using OpenAI compatible TTS service",
   icons: {
-    48: 'public/logo.png',
+    48: "public/logo.png"
   },
   action: {
     default_icon: {
-      48: 'public/logo.png',
+      48: "public/logo.png"
     },
-    default_popup: 'src/popup/index.html',
+    default_popup: 'src/popup/index.html'
+  },
+  background: {
+    service_worker: "background.js"
   },
   permissions: [
-    'sidePanel',
-    'contentSettings',
+    "activeTab",
+    "storage",
+    "scripting",
+    "offscreen",
+    "contextMenus"
   ],
-  content_scripts: [{
-    js: ['src/content/main.tsx'],
-    matches: ['https://*/*'],
-  }],
-  side_panel: {
-    default_path: 'src/sidepanel/index.html',
-  },
+  host_permissions: [
+    "http://localhost:8000/*",
+    "http://*/*",
+    "https://*/*"
+  ],
 })
