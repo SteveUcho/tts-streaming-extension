@@ -1,6 +1,6 @@
 import { TextProcessor } from "./src/textProcessor";
+import { DEFAULT_SETTINGS, LocalSettings } from "./src/popup/constants";
 
-let isRecording = false;
 let currentPlayerState = 'stopped';
 let creating: Promise<void> | null = null; // A global promise to avoid concurrency issues
 
@@ -46,60 +46,25 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "readAloud") {
     let text = info.selectionText;
 
-    if (text) {
-      processAndReadText(text, tab?.id);
-      // If no text is selected, get the page content
-      // chrome.scripting.executeScript({
-      //   target: { tabId: tab?.id },
-      //   function: () => {
-      //     return document.body.innerText;
-      //   }
-      // }).then(results => {
-      //   if (results && results[0] && results[0].result) {
-      //     processAndReadText(results[0].result, tab.id);
-      //   }
-      // });
+    if (text && tab?.id) {
+      processAndReadText(text);
     }
   }
 });
 
+function getDefaultSettings(): Promise<LocalSettings> {
+  return chrome.storage.local.get(DEFAULT_SETTINGS as any);
+}
+
 // Process and read text with default settings
-async function processAndReadText(text: string, tabId: number | undefined) {
+async function processAndReadText(text: string) {
   try {
     // Get default settings
-    const settings = await chrome.storage.local.get({
-      serverUrl: 'http://localhost:8000/v1/audio/speech',
-      voice: 'af_bella',
-      speed: 1,
-      recordAudio: false,
-      preprocessText: true
-    });
+    const settings = await getDefaultSettings();
 
     // Process text if enabled
-    if (settings.preprocessText && tabId) {
-      try {
-        // Inject the text processor script if needed
-        await chrome.scripting.executeScript({
-          target: { tabId: tabId },
-          files: ['textProcessor.js']
-        });
-
-        // Process the text
-        const result = await chrome.scripting.executeScript({
-          target: { tabId: tabId },
-          func: (textToProcess) => {
-            return TextProcessor.process(textToProcess);
-          },
-          args: [text]
-        });
-
-        if (result?.[0]?.result) {
-          text = result[0].result;
-        }
-      } catch (error) {
-        console.error('Error processing text:', error);
-        // Fall back to using the original text
-      }
+    if (settings.preprocessText) {
+      text = TextProcessor.process(text);
     }
 
     // Set state to loading
@@ -110,7 +75,7 @@ async function processAndReadText(text: string, tabId: number | undefined) {
     });
 
     // Start streaming audio
-    startStreamingAudio(text, settings);
+    startStreamingAudio(text);
   } catch (error) {
     console.error('Error in processAndReadText:', error);
     chrome.runtime.sendMessage({
@@ -128,14 +93,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       return true;
 
     case 'startStreaming':
-      isRecording = message.record;
-      // Set state to loading before starting the audio stream
-      currentPlayerState = 'loading';
-      chrome.runtime.sendMessage({
-        type: 'playerStateUpdate',
-        state: 'loading'
-      });
-      startStreamingAudio(message.text, message.settings);
+      processAndReadText(message.text);
       sendResponse({ success: true });
       return true;
 
@@ -194,9 +152,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 });
 
 // Start streaming audio from the TTS server
-async function startStreamingAudio(text: string, settings: any) {
+async function startStreamingAudio(text: string) {
   try {
     await setupOffscreenDocument();
+
+    const settings = await getDefaultSettings();
 
     const response = await fetch(settings.serverUrl, {
       method: 'POST',
@@ -208,7 +168,7 @@ async function startStreamingAudio(text: string, settings: any) {
         model: 'tts-1',
         voice: settings.voice,
         input: text,
-        speed: Number.parseFloat(settings.speed)
+        speed: Number.parseFloat(settings.speed.toString())
       })
     });
 
@@ -228,7 +188,7 @@ async function startStreamingAudio(text: string, settings: any) {
       type: 'processAudioData',
       audioData: Array.from(new Uint8Array(arrayBuffer)),
       mimeType: mimeType,
-      isRecording: isRecording
+      isRecording: settings.recordAudio
     });
   } catch (error) {
     console.error('Error streaming audio:', error);
