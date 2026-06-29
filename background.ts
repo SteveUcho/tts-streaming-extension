@@ -36,15 +36,6 @@ async function getDefaultSettings(): Promise<LocalSettings> {
   return await chrome.storage.local.get(DEFAULT_SETTINGS as any);
 }
 
-// Set up context menu items
-function setupContextMenu() {
-  chrome.contextMenus.create({
-    id: "readAloud",
-    title: "Read Aloud",
-    contexts: ["selection"]
-  });
-}
-
 async function playText(text?: string) {
   await setupOffscreenDocument();
   if (!text) {
@@ -57,16 +48,31 @@ async function playText(text?: string) {
     text = TextProcessor.process(text);
   }
 
-  // Start streaming audio
-  chrome.runtime.sendMessage({
-    type: 'startStreaming',
-    text: text,
-    settings: settings,
-  });
+  let success = false;
+  while (!success) {
+    try {
+      // Start streaming audio
+      success = await chrome.runtime.sendMessage({
+        type: 'startStreaming',
+        text: text,
+        settings: settings,
+      });
+    } catch (error) {
+      console.error('Will retry in 50ms:', error);
+      setTimeout(() => {
+        success = true;
+        chrome.runtime.sendMessage({
+          type: 'streamError',
+          error: 'Failed to start streaming',
+        });
+      }, 1000);
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+  }
 }
 
 // Handle context menu clicks
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "readAloud") {
     let text = info.selectionText;
 
@@ -82,6 +88,15 @@ chrome.runtime.onMessage.addListener((message) => {
     playText();
   }
 });
+
+// Set up context menu items
+function setupContextMenu() {
+  chrome.contextMenus.create({
+    id: "readAloud",
+    title: "Read Aloud",
+    contexts: ["selection"]
+  });
+}
 
 // Initialize context menu when extension is installed or updated
 chrome.runtime.onInstalled.addListener(() => {

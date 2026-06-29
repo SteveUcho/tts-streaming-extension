@@ -119,7 +119,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
     case 'startStreaming':
       processAndReadText(message.text, message.settings);
-      break;
+      sendResponse(true);
+      return true;
 
     case 'getPlayerState':
       sendResponse({ state: currentPlayerState });
