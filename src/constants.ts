@@ -4,6 +4,7 @@ export interface LocalSettings {
   speed: number;
   recordAudio: boolean;
   preprocessText: boolean;
+  streamMode: boolean;
 }
 
 export const DEFAULT_SETTINGS: LocalSettings = {
@@ -11,5 +12,6 @@ export const DEFAULT_SETTINGS: LocalSettings = {
   voice: 'af_bella',
   speed: 1.0,
   recordAudio: false,
-  preprocessText: true
+  preprocessText: true,
+  streamMode: false
 };

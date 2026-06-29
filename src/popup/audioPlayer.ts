@@ -42,7 +42,8 @@ export class AudioPlayer {
   }
 
   async getState(): Promise<string> {
-    const response = await chrome.runtime.sendMessage({ type: 'getPlayerState' });
+    const settings = await chrome.storage.local.get('streamMode');
+    const response = await chrome.runtime.sendMessage({ type: 'getPlayerState', streamMode: settings.streamMode });
     console.log('Get state new response:', response);
     return response?.state || 'stopped';
   }

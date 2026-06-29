@@ -49,6 +49,7 @@ async function playText(text?: string) {
   }
 
   let success = false;
+  let failTimer: NodeJS.Timeout | null = null;
   while (!success) {
     try {
       // Start streaming audio
@@ -57,9 +58,13 @@ async function playText(text?: string) {
         text: text,
         settings: settings,
       });
+
+      if (failTimer) {
+        clearTimeout(failTimer);
+      }
     } catch (error) {
       console.error('Will retry in 50ms:', error);
-      setTimeout(() => {
+      failTimer ??= setTimeout(() => {
         success = true;
         chrome.runtime.sendMessage({
           type: 'streamError',
