@@ -1,18 +1,12 @@
 import { updateStatus } from "@/utils/dom";
 import { useEffect, useState } from "react";
-import { DEFAULT_SETTINGS } from "@/popup/constants";
+import { DEFAULT_SETTINGS } from "@/constants";
 
 export function Settings() {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 
   useEffect(() => {
-    chrome.storage.local.get({
-      serverUrl: DEFAULT_SETTINGS.serverUrl,
-      voice: DEFAULT_SETTINGS.voice,
-      speed: DEFAULT_SETTINGS.speed,
-      recordAudio: DEFAULT_SETTINGS.recordAudio,
-      preprocessText: DEFAULT_SETTINGS.preprocessText
-    }).then((result) => {
+    chrome.storage.local.get(DEFAULT_SETTINGS as any).then((result) => {
       setSettings(result as any);
     });
   }, []);

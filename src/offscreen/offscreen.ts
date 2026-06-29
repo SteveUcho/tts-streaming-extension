@@ -1,43 +1,54 @@
+import { LocalSettings } from "@/constants";
+
 const audioElement = document.getElementById('audioElement') as HTMLAudioElement;
+let currentPlayerState = 'stopped';
 
-// Process audio data received from background script
-function processAudioData(audioDataArray: number[], mimeType: string, isRecording: boolean) {
+// Process and read text with default settings
+function processAndReadText(text: string, settings: LocalSettings) {
+  // Set state to loading
+  currentPlayerState = 'loading';
+  chrome.runtime.sendMessage({
+    type: 'playerStateUpdate',
+    state: 'loading'
+  });
+
+  // Start streaming audio
+  startStreamingAudio(text, settings);
+}
+
+// Start streaming audio from the TTS server
+async function startStreamingAudio(text: string, settings: LocalSettings) {
   try {
-    // Convert array back to Uint8Array
-    const uint8Array = new Uint8Array(audioDataArray);
+    const response = await fetch(settings.serverUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'audio/mpeg, audio/wav, audio/*'
+      },
+      body: JSON.stringify({
+        model: 'tts-1',
+        voice: settings.voice,
+        input: text,
+        speed: Number.parseFloat(settings.speed.toString())
+      })
+    });
 
-    // Create blob from the array
-    const blob = new Blob([uint8Array], { type: mimeType });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
+    // Get the audio data as a blob
+    const audioBlob = await response.blob();
     // Create URL for the blob
-    const audioUrl = URL.createObjectURL(blob);
+    const audioUrl = URL.createObjectURL(audioBlob);
 
     // If recording is enabled, send URL back for download
-    if (isRecording) {
+    if (settings.recordAudio) {
       chrome.runtime.sendMessage({
         type: 'recordingComplete',
         audioUrl: audioUrl
       });
     }
-
-    // Play the audio
-    playAudioUrl(audioUrl);
-
-    // Notify that audio is ready to play
-    chrome.runtime.sendMessage({ type: 'audioReady' });
-  } catch (error) {
-    console.error('Error processing audio data:', error);
-    chrome.runtime.sendMessage({
-      type: 'streamError',
-      error: (error as Error).message
-    });
-  }
-}
-
-// Play audio from URL
-function playAudioUrl(audioUrl: string) {
-  try {
-    console.log('Playing audio URL:', audioUrl);
 
     // Set up audio element
     audioElement.src = audioUrl;
@@ -51,10 +62,17 @@ function playAudioUrl(audioUrl: string) {
       });
     });
   } catch (error) {
-    console.error('Error playing audio URL:', error);
+    console.error('Error streaming audio:', error);
     chrome.runtime.sendMessage({
       type: 'streamError',
       error: (error as Error).message
+    });
+
+    // Update state to stopped on error
+    currentPlayerState = 'stopped';
+    chrome.runtime.sendMessage({
+      type: 'playerStateUpdate',
+      state: 'stopped'
     });
   }
 }
@@ -77,12 +95,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   console.log('Offscreen received message:', message.type);
 
   switch (message.type) {
-    case 'processAudioData':
-      if (message.audioData) {
-        processAudioData(message.audioData, message.mimeType, message.isRecording);
-      }
-      break;
-
     case 'play':
       audioElement.play();
       break;
@@ -94,28 +106,42 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     case 'stop':
       audioElement.pause();
       audioElement.currentTime = 0;
-      chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'stopped' });
+      chrome.runtime.sendMessage({ type: 'playerStateUpdate', state: 'stopped' });
       break;
 
-    case 'seek': {
+    case 'seek':
       seekTo(message.time);
-      return true;
-    }
+      break;
+
     case 'getTimeInfo':
       sendResponse({ timeInfo: getTimeInfo() });
       return true;
+
+    case 'startStreaming':
+      processAndReadText(message.text, message.settings);
+      break;
+
+    case 'getPlayerState':
+      sendResponse({ state: currentPlayerState });
+      return true;
+
+    default:
+      break;
   }
 });
 
 // Initialize audio event handlers
 audioElement.onplay = () => {
-  chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'playing' });
+  currentPlayerState = 'playing';
+  chrome.runtime.sendMessage({ type: 'playerStateUpdate', state: 'playing' });
 };
 
 audioElement.onpause = () => {
-  chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'paused' });
+  currentPlayerState = 'paused';
+  chrome.runtime.sendMessage({ type: 'playerStateUpdate', state: 'paused' });
 };
 
 audioElement.onended = () => {
-  chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'stopped' });
+  currentPlayerState = 'stopped';
+  chrome.runtime.sendMessage({ type: 'playerStateUpdate', state: 'stopped' });
 };

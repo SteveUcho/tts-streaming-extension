@@ -8,8 +8,6 @@ function isDisabled(state: string): boolean {
   switch (state) {
     case 'loading':
       return true;
-    case 'ready':
-      return false;
     case 'playing':
       return false;
     case 'paused':
@@ -38,18 +36,20 @@ export function Seek() {
   }, [playState]);
 
   useEffect(() => {
-    if (playState !== 'playing') return;
-    const interval = setInterval(async () => {
-      const audioPlayer = audioPlayerInstance;
-
-      const timeInfo = await audioPlayer.getTimeInfo();
-      if (timeInfo && !isSeeking) {
-        setDuration(timeInfo.duration);
-        setCurrentTime(timeInfo.currentTime);
-      }
-    }, 200);
+    updateTimeInfo();
+    if (playState !== 'playing' || isSeeking) return;
+    const interval = setInterval(updateTimeInfo, 200);
     return () => clearInterval(interval);
   }, [isSeeking, playState]);
+
+  const updateTimeInfo = async () => {
+    const audioPlayer = audioPlayerInstance;
+    const timeInfo = await audioPlayer.getTimeInfo();
+    if (timeInfo) {
+      setDuration(timeInfo.duration);
+      setCurrentTime(timeInfo.currentTime);
+    }
+  };
 
   // When user starts seeking
   const handleMouseDown = () => {
