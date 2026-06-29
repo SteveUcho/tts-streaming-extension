@@ -1,53 +1,8 @@
-let audioSourceNode: MediaElementAudioSourceNode | null = null;
-const audioContext = new (globalThis.AudioContext || (globalThis as any).webkitAudioContext)();
-
-function setupAudioNode(context: AudioContext, audioElement: HTMLAudioElement) {
-  // If it already exists, just return the existing node
-  if (audioSourceNode) {
-    return audioSourceNode;
-  }
-
-  // Otherwise, create it and store it
-  audioSourceNode = context.createMediaElementSource(audioElement);
-  return audioSourceNode;
-}
-
-// Initialize the audio context
-function initAudio() {
-  const audioElement = document.getElementById('audioElement') as HTMLAudioElement;
-  // Set up event listeners
-  audioElement.onplay = () => {
-    const sourceNode = setupAudioNode(audioContext, audioElement);
-    sourceNode.connect(audioContext.destination);
-
-    chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'playing' });
-  };
-
-  audioElement.onpause = () => {
-    chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'paused' });
-  };
-
-  audioElement.onended = () => {
-    chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'stopped' });
-  };
-
-  // Add timeupdate event for seeking
-  // audioElement.ontimeupdate = () => {
-  //   chrome.runtime.sendMessage({ 
-  //     type: 'timeUpdate', 
-  //     timeInfo: {
-  //       currentTime: audioElement?.currentTime ?? 0,
-  //       duration: audioElement?.duration ?? 0
-  //     }
-  //   });
-  // };
-}
+const audioElement = document.getElementById('audioElement') as HTMLAudioElement;
 
 // Process audio data received from background script
 function processAudioData(audioDataArray: number[], mimeType: string, isRecording: boolean) {
   try {
-    initAudio();
-
     // Convert array back to Uint8Array
     const uint8Array = new Uint8Array(audioDataArray);
 
@@ -81,7 +36,6 @@ function processAudioData(audioDataArray: number[], mimeType: string, isRecordin
 
 // Play audio from URL
 function playAudioUrl(audioUrl: string) {
-  const audioElement = document.getElementById('audioElement') as HTMLAudioElement;
   try {
     console.log('Playing audio URL:', audioUrl);
 
@@ -107,7 +61,6 @@ function playAudioUrl(audioUrl: string) {
 
 // Get current time and duration
 function getTimeInfo() {
-  const audioElement = document.getElementById('audioElement') as HTMLAudioElement;
   return {
     currentTime: audioElement.currentTime,
     duration: audioElement.duration
@@ -116,14 +69,12 @@ function getTimeInfo() {
 
 // Seek to a specific time
 function seekTo(time: number) {
-  const audioElement = document.getElementById('audioElement') as HTMLAudioElement;
   audioElement.currentTime = time;
 }
 
 // Handle messages from the background script
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   console.log('Offscreen received message:', message.type);
-  const audioElement = document.getElementById('audioElement') as HTMLAudioElement;
 
   switch (message.type) {
     case 'processAudioData':
@@ -160,8 +111,18 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Offscreen document loaded');
 
-  // Initialize audio context
-  initAudio();
+  // Initialize audio event handlers
+  audioElement.onplay = () => {
+    chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'playing' });
+  };
+
+  audioElement.onpause = () => {
+    chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'paused' });
+  };
+
+  audioElement.onended = () => {
+    chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'stopped' });
+  };
 
   console.log('Offscreen document initialized');
 });
