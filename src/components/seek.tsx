@@ -47,7 +47,7 @@ export function Seek() {
         setDuration(timeInfo.duration);
         setCurrentTime(timeInfo.currentTime);
       }
-    }, 500);
+    }, 200);
     return () => clearInterval(interval);
   }, [isSeeking, playState]);
 
