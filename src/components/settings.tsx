@@ -62,17 +62,23 @@ export function Settings() {
         </div>
       </div>
 
-      <div className="setting-group checkbox-group">
-        <label className="checkbox-label">
-          <input type="checkbox" name="recordAudio" checked={settings.recordAudio} onChange={saveSettings} /> Save audio for download
-        </label>
+      <div className="setting-group">
+        <div className="checkbox-group">
+          <label htmlFor="recordAudio" className="checkbox-label">
+            Save audio for download
+          </label>
+          <input id="recordAudio" type="checkbox" name="recordAudio" checked={settings.recordAudio} onChange={saveSettings} />
+        </div>
         <div className="helper-text">Audio will be available to download after playback completes or when stopped.</div>
       </div>
 
-      <div className="setting-group checkbox-group">
-        <label className="checkbox-label">
-          <input type="checkbox" name="preprocessText" checked={settings.preprocessText} onChange={saveSettings} /> Pre-process text for TTS
-        </label>
+      <div className="setting-group ">
+        <div className="checkbox-group">
+          <label htmlFor="preprocessText" className="checkbox-label">
+            Pre-process text for TTS
+          </label>
+          <input id="preprocessText" type="checkbox" name="preprocessText" checked={settings.preprocessText} onChange={saveSettings} />
+        </div>
         <div className="helper-text">Removes markdown, cleans up URLs, and improves text for better speech output.</div>
       </div>
 
