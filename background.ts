@@ -45,20 +45,33 @@ function setupContextMenu() {
   });
 }
 
+async function playText(text?: string) {
+  await setupOffscreenDocument();
+  if (!text) {
+    text = await getHighlightText();
+  }
+  const settings = await getDefaultSettings();
+
+  // Process text if enabled
+  if (settings.preprocessText) {
+    text = TextProcessor.process(text);
+  }
+
+  // Start streaming audio
+  chrome.runtime.sendMessage({
+    type: 'startStreaming',
+    text: text,
+    settings: settings,
+  });
+}
+
 // Handle context menu clicks
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId === "readAloud") {
     let text = info.selectionText;
 
     if (text && tab?.id) {
-      await setupOffscreenDocument();
-      const settings = await getDefaultSettings();
-      // Start streaming audio
-      chrome.runtime.sendMessage({
-        type: 'startStreaming',
-        text: text,
-        settings: settings,
-      });
+      playText(text);
     }
   }
 });
@@ -66,24 +79,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 // Handle messages from popup or offscreen document
 chrome.runtime.onMessage.addListener((message) => {
   if (message.type === 'startStreamingBackground') {
-    (async () => {
-      await setupOffscreenDocument();
-      let text = await getHighlightText();
-      const settings = await getDefaultSettings();
-
-      // Process text if enabled
-      if (settings.preprocessText) {
-        text = TextProcessor.process(text);
-      }
-
-      // Start streaming audio
-      chrome.runtime.sendMessage({
-        type: 'startStreaming',
-        text: text,
-        settings: settings,
-      });
-    })()
-
+    playText();
   }
 });
 
