@@ -67,8 +67,7 @@ async function processAndReadText(text: string, settings: LocalSettings) {
     }
 
     // Create URL for the blob
-    let audioUrl = "";
-
+    let audioChunks: ArrayBuffer[] = [];
     if (settings.streamMode && response.body instanceof ReadableStream) {
       if (audioCtx && audioCtx.state !== 'closed') {
         await audioCtx.close();
@@ -76,8 +75,8 @@ async function processAndReadText(text: string, settings: LocalSettings) {
       audioCtx = new globalThis.AudioContext();
       nextStartTime = 0;
       sourceCount = 0;
-      const reader = response.body.getReader();
       chrome.runtime.sendMessage({ type: 'playerStateUpdate', state: 'playing' });
+      const reader = response.body.getReader();
 
       while (true) {
         const { done, value } = await reader.read();
@@ -87,12 +86,13 @@ async function processAndReadText(text: string, settings: LocalSettings) {
         }
 
         // Process the chunk
+        audioChunks.push(value.buffer.slice());
         await playAudioChunk(audioCtx, value.buffer);
       }
     } else {
       // Get the audio data as a blob
       const audioBlob = await response.blob();
-      audioUrl = URL.createObjectURL(audioBlob);
+      const audioUrl = URL.createObjectURL(audioBlob);
 
       // Set up audio element
       audioElement.src = audioUrl;
@@ -106,7 +106,10 @@ async function processAndReadText(text: string, settings: LocalSettings) {
     }
     // If recording is enabled, send URL back for download
     if (settings.recordAudio) {
-      chrome.runtime.sendMessage({ type: 'recordingComplete', audioUrl: audioUrl });
+      console.log('Audio chunks:', audioChunks);
+      chrome.runtime.sendMessage({
+        type: 'recordingComplete', audioChunks: audioChunks.map(chunk => Array.from(new Uint8Array(chunk)))
+      });
     }
   } catch (error) {
     console.error('Error streaming audio:', error);

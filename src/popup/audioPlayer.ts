@@ -44,13 +44,11 @@ export class AudioPlayer {
   async getState(): Promise<string> {
     const settings = await chrome.storage.local.get('streamMode');
     const response = await chrome.runtime.sendMessage({ type: 'getPlayerState', streamMode: settings.streamMode });
-    console.log('Get state new response:', response);
     return response?.state || 'stopped';
   }
 
   async getTimeInfo(): Promise<{ currentTime: number; duration: number } | null> {
     const response = await chrome.runtime.sendMessage({ type: 'getTimeInfo' });
-    console.log('Get time info new response:', response);
     return response?.timeInfo || null;
   }
 }

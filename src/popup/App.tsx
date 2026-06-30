@@ -12,28 +12,23 @@ export default function App() {
   const setPlayState = useSetAtom(playStateAtom)
 
   const handleBackgroundMessage = (message: any) => {
+    console.log('Received message from background:', message);
     switch (message.type) {
       case 'playerStateUpdate':
         setPlayState(message.state);
         break;
 
-      case 'recordingComplete':
-        audioPlayer.audioUrl = message.audioUrl;
+      case 'recordingComplete': {
+        const audioChunk = message.audioChunks.map((chunk: number[]) => Uint8Array.from(chunk).buffer);
+        const audioBlob = new Blob(audioChunk, { type: 'audio/mpeg' });
+        audioPlayer.audioUrl = URL.createObjectURL(audioBlob);
         break;
+      }
 
       case 'streamError':
         updateStatus(message.error, true);
         setPlayState('stopped');
         break;
-
-      // case 'timeUpdate':
-      //   if (message.timeInfo && !seekBar.classList.contains('seeking')) {
-      //     seekBar.max = message.timeInfo.duration;
-      //     seekBar.value = message.timeInfo.currentTime;
-      //     document.getElementById('currentTime').textContent = formatTime(message.timeInfo.currentTime);
-      //     document.getElementById('duration').textContent = formatTime(message.timeInfo.duration);
-      //   }
-      //   break;
     }
   }
 
