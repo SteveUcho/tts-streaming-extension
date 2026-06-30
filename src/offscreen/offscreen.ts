@@ -10,6 +10,9 @@ let sourceCount = 0;
 function onSourceEnd() {
   sourceCount--;
   if (sourceCount === 0) {
+    if (audioCtx && audioCtx.state !== 'closed') {
+      audioCtx.close();
+    }
     chrome.runtime.sendMessage({ type: 'playerStateUpdate', state: 'stopped' });
   }
 }
@@ -67,8 +70,12 @@ async function processAndReadText(text: string, settings: LocalSettings) {
     let audioUrl = "";
 
     if (settings.streamMode && response.body instanceof ReadableStream) {
-      audioCtx?.close();
+      if (audioCtx && audioCtx.state !== 'closed') {
+        await audioCtx.close();
+      }
       audioCtx = new globalThis.AudioContext();
+      nextStartTime = 0;
+      sourceCount = 0;
       const reader = response.body.getReader();
       chrome.runtime.sendMessage({ type: 'playerStateUpdate', state: 'playing' });
 
@@ -161,8 +168,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
     case 'stop':
       currentPlayerState = 'stopped';
-      if (audioCtx?.state !== 'closed') {
-        audioCtx?.close();
+      if (audioCtx && audioCtx.state !== 'closed') {
+        audioCtx.close();
       }
       audioElement.pause();
       audioElement.currentTime = 0;

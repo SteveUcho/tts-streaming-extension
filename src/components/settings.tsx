@@ -50,7 +50,7 @@ export function Settings() {
   }
 
   return (
-    <form id="settings-form" className="settings-panel">
+    <form id="settings-form" className="section-container">
       <div className="setting-group">
         <label htmlFor="voice">Voice</label>
         <select name="voice" value={settings.voice} onChange={saveSettings}>

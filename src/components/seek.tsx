@@ -1,7 +1,7 @@
 import { formatTime } from "@/utils/formatTime";
 import { useEffect, useState } from "react";
 import { audioPlayer as audioPlayerInstance } from "@/popup/audioPlayer";
-import { playStateAtom } from "@/utils/atoms";
+import { playStateAtom, streamModeAtom } from "@/utils/atoms";
 import { useAtomValue } from "jotai";
 
 function isDisabled(state: string): boolean {
@@ -21,6 +21,8 @@ function isDisabled(state: string): boolean {
 
 export function Seek() {
   const playState = useAtomValue(playStateAtom);
+  const streamMode = useAtomValue(streamModeAtom);
+
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isSeeking, setIsSeeking] = useState(false);
@@ -69,8 +71,16 @@ export function Seek() {
     setIsSeeking(false);
   };
 
+  if (streamMode) {
+    return (
+      <div className="section-container" style={{ textAlign: "center" }}>
+        Streaming Mode: On
+      </div>
+    );
+  }
+
   return (
-    <div className="seek-container">
+    <div className="section-container">
       <div className="seek-bar-wrapper">
         <input type="range" id="seekBar" min="0" step="0.1"
           disabled={isSeekDisabled}

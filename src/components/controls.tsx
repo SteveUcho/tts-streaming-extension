@@ -43,6 +43,7 @@ function updateControlButtons(state: string, currentAudioUrl: string | null, has
     case 'stopped': {
       controlsState.playDisabled = false;
       controlsState.pauseDisabled = true;
+      controlsState.stopDisabled = true;
       controlsState.downloadDisabled = !currentAudioUrl;
       break;
     }
@@ -108,7 +109,7 @@ export function Controls() {
   };
 
   return (
-    <div className="control-panel">
+    <div className="control-panel section-container">
       <button className="btn" id="playBtn" title="Play" disabled={controlsState.playDisabled} onClick={handlePlayClick}>
         <i className="fas fa-play"></i>
       </button>
