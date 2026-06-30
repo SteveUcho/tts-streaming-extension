@@ -1,113 +1,127 @@
-let audioSourceNode: MediaElementAudioSourceNode | null = null;
-const audioContext = new (globalThis.AudioContext || (globalThis as any).webkitAudioContext)();
+import { LocalSettings } from "@/constants";
 
-function setupAudioNode(context: AudioContext, audioElement: HTMLAudioElement) {
-  // If it already exists, just return the existing node
-  if (audioSourceNode) {
-    return audioSourceNode;
+const audioElement = document.getElementById('audioElement') as HTMLAudioElement;
+let currentPlayerState = 'stopped';
+
+let audioCtx: AudioContext | null = null;
+let nextStartTime = 0; // Tracks when the next chunk should play
+let sourceCount = 0;
+
+function onSourceEnd() {
+  sourceCount--;
+  if (sourceCount === 0) {
+    if (audioCtx && audioCtx.state !== 'closed') {
+      audioCtx.close();
+    }
+    chrome.runtime.sendMessage({ type: 'playerStateUpdate', state: 'stopped' });
   }
-
-  // Otherwise, create it and store it
-  audioSourceNode = context.createMediaElementSource(audioElement);
-  return audioSourceNode;
 }
 
-// Initialize the audio context
-function initAudio() {
-  const audioElement = document.getElementById('audioElement') as HTMLAudioElement;
-  // Set up event listeners
-  audioElement.onplay = () => {
-    const sourceNode = setupAudioNode(audioContext, audioElement);
-    sourceNode.connect(audioContext.destination);
-
-    chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'playing' });
-  };
-
-  audioElement.onpause = () => {
-    chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'paused' });
-  };
-
-  audioElement.onended = () => {
-    chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'stopped' });
-  };
-
-  // Add timeupdate event for seeking
-  // audioElement.ontimeupdate = () => {
-  //   chrome.runtime.sendMessage({ 
-  //     type: 'timeUpdate', 
-  //     timeInfo: {
-  //       currentTime: audioElement?.currentTime ?? 0,
-  //       duration: audioElement?.duration ?? 0
-  //     }
-  //   });
-  // };
-}
-
-// Process audio data received from background script
-function processAudioData(audioDataArray: number[], mimeType: string, isRecording: boolean) {
+async function playAudioChunk(audioCtx: AudioContext, arrayBuffer: ArrayBuffer) {
+  // 1. Decode the binary chunk into an AudioBuffer
   try {
-    initAudio();
+    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
 
-    // Convert array back to Uint8Array
-    const uint8Array = new Uint8Array(audioDataArray);
+    // 2. Create an AudioBufferSourceNode
+    const source = audioCtx.createBufferSource();
+    source.buffer = audioBuffer;
 
-    // Create blob from the array
-    const blob = new Blob([uint8Array], { type: mimeType });
+    // 3. Connect to the speakers
+    source.connect(audioCtx.destination);
 
-    // Create URL for the blob
-    const audioUrl = URL.createObjectURL(blob);
-
-    // If recording is enabled, send URL back for download
-    if (isRecording) {
-      chrome.runtime.sendMessage({
-        type: 'recordingComplete',
-        audioUrl: audioUrl
-      });
+    // 4. Schedule playback seamlessly
+    const currentTime = audioCtx.currentTime;
+    if (nextStartTime < currentTime) {
+      nextStartTime = currentTime; // Reset if we fall behind
     }
 
-    // Play the audio
-    playAudioUrl(audioUrl);
-
-    // Notify that audio is ready to play
-    chrome.runtime.sendMessage({ type: 'audioReady' });
-  } catch (error) {
-    console.error('Error processing audio data:', error);
-    chrome.runtime.sendMessage({
-      type: 'streamError',
-      error: (error as Error).message
-    });
+    source.start(nextStartTime);
+    sourceCount++;
+    source.onended = onSourceEnd;
+    nextStartTime += audioBuffer.duration; // Advance time tracker
+  } catch (err) {
+    console.error("Error decoding audio chunk", err);
   }
 }
 
-// Play audio from URL
-function playAudioUrl(audioUrl: string) {
-  const audioElement = document.getElementById('audioElement') as HTMLAudioElement;
+// Process and read text with default settings
+async function processAndReadText(text: string, settings: LocalSettings) {
+  chrome.runtime.sendMessage({ type: 'playerStateUpdate', state: 'loading' });
+
   try {
-    console.log('Playing audio URL:', audioUrl);
+    const response = await fetch(settings.serverUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'tts-1',
+        voice: settings.voice,
+        input: text,
+        speed: Number.parseFloat(settings.speed.toString())
+      })
+    });
 
-    // Set up audio element
-    audioElement.src = audioUrl;
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
-    // Start playing
-    audioElement.play().catch(err => {
-      console.error('Play error:', err);
-      chrome.runtime.sendMessage({
-        type: 'streamError',
-        error: err.message
+    // Create URL for the blob
+    let audioChunks: ArrayBuffer[] = [];
+    if (settings.streamMode && response.body instanceof ReadableStream) {
+      if (audioCtx && audioCtx.state !== 'closed') {
+        await audioCtx.close();
+      }
+      audioCtx = new globalThis.AudioContext();
+      nextStartTime = 0;
+      sourceCount = 0;
+      chrome.runtime.sendMessage({ type: 'playerStateUpdate', state: 'playing' });
+      const reader = response.body.getReader();
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          break;
+        }
+
+        // Process the chunk
+        audioChunks.push(value.buffer.slice());
+        await playAudioChunk(audioCtx, value.buffer);
+      }
+    } else {
+      // Get the audio data as a blob
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+
+      // Set up audio element
+      audioElement.src = audioUrl;
+
+      chrome.runtime.sendMessage({ type: 'playerStateUpdate', state: 'playing' });
+      // Start playing
+      audioElement.play().catch(err => {
+        console.error('Play error:', err);
+        chrome.runtime.sendMessage({ type: 'streamError', error: err.message });
       });
-    });
+    }
+    // If recording is enabled, send URL back for download
+    if (settings.recordAudio) {
+      chrome.runtime.sendMessage({
+        type: 'recordingComplete', audioChunks: audioChunks.map(chunk => Array.from(new Uint8Array(chunk)))
+      });
+    }
   } catch (error) {
-    console.error('Error playing audio URL:', error);
-    chrome.runtime.sendMessage({
-      type: 'streamError',
-      error: (error as Error).message
-    });
+    console.error('Error streaming audio:', error);
+    chrome.runtime.sendMessage({ type: 'streamError', error: (error as Error).message });
+
+    // Update state to stopped on error
+    currentPlayerState = 'stopped';
+    chrome.runtime.sendMessage({ type: 'playerStateUpdate', state: 'stopped' });
   }
 }
 
 // Get current time and duration
 function getTimeInfo() {
-  const audioElement = document.getElementById('audioElement') as HTMLAudioElement;
   return {
     currentTime: audioElement.currentTime,
     duration: audioElement.duration
@@ -116,52 +130,77 @@ function getTimeInfo() {
 
 // Seek to a specific time
 function seekTo(time: number) {
-  const audioElement = document.getElementById('audioElement') as HTMLAudioElement;
   audioElement.currentTime = time;
+}
+
+function getPlayerState(streamMode: boolean): string {
+  if (!streamMode) {
+    return currentPlayerState;
+  }
+  switch (audioCtx?.state) {
+    case 'suspended':
+      return 'paused';
+    case 'running':
+      return 'playing';
+    case 'closed':
+      return 'stopped';
+    default:
+      return 'stopped';
+  }
 }
 
 // Handle messages from the background script
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  console.log('Offscreen received message:', message.type);
-  const audioElement = document.getElementById('audioElement') as HTMLAudioElement;
-
   switch (message.type) {
-    case 'processAudioData':
-      if (message.audioData) {
-        processAudioData(message.audioData, message.mimeType, message.isRecording);
-      }
-      break;
-
     case 'play':
+      currentPlayerState = 'playing';
+      audioCtx?.resume();
       audioElement.play();
+      chrome.runtime.sendMessage({ type: 'playerStateUpdate', state: 'playing' });
       break;
 
     case 'pause':
+      currentPlayerState = 'paused';
+      audioCtx?.suspend();
       audioElement.pause();
+      chrome.runtime.sendMessage({ type: 'playerStateUpdate', state: 'paused' });
       break;
 
     case 'stop':
+      currentPlayerState = 'stopped';
+      if (audioCtx && audioCtx.state !== 'closed') {
+        audioCtx.close();
+      }
       audioElement.pause();
       audioElement.currentTime = 0;
-      chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'stopped' });
+      chrome.runtime.sendMessage({ type: 'playerStateUpdate', state: 'stopped' });
       break;
 
-    case 'seek': {
+    case 'seek':
       seekTo(message.time);
-      return true;
-    }
+      break;
+
     case 'getTimeInfo':
       sendResponse({ timeInfo: getTimeInfo() });
       return true;
+
+    case 'startStreaming':
+      // Set state to loading
+      currentPlayerState = 'loading';
+      processAndReadText(message.text, message.settings);
+      sendResponse(true);
+      return true;
+
+    case 'getPlayerState':
+      sendResponse({ state: getPlayerState(message.streamMode) });
+      return true;
+
+    default:
+      break;
   }
 });
 
-// Initialize when the document loads
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('Offscreen document loaded');
-
-  // Initialize audio context
-  initAudio();
-
-  console.log('Offscreen document initialized');
-});
+// Initialize audio event handlers
+audioElement.onended = () => {
+  chrome.runtime.sendMessage({ type: 'playerStateUpdate', state: 'stopped' });
+};

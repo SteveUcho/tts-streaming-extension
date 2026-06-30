@@ -1,19 +1,17 @@
 import { updateStatus } from "@/utils/dom";
 import { useEffect, useState } from "react";
-import { DEFAULT_SETTINGS } from "@/popup/constants";
+import { DEFAULT_SETTINGS } from "@/constants";
+import { useSetAtom } from "jotai";
+import { streamModeAtom } from "@/utils/atoms";
 
 export function Settings() {
+  const setStreamMode = useSetAtom(streamModeAtom);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 
   useEffect(() => {
-    chrome.storage.local.get({
-      serverUrl: DEFAULT_SETTINGS.serverUrl,
-      voice: DEFAULT_SETTINGS.voice,
-      speed: DEFAULT_SETTINGS.speed,
-      recordAudio: DEFAULT_SETTINGS.recordAudio,
-      preprocessText: DEFAULT_SETTINGS.preprocessText
-    }).then((result) => {
+    chrome.storage.local.get(DEFAULT_SETTINGS as any).then((result) => {
       setSettings(result as any);
+      setStreamMode(result.streamMode as boolean ?? false);
     });
   }, []);
 
@@ -24,7 +22,7 @@ export function Settings() {
     for (const [key, value] of formdata.entries()) {
       if (key === 'speed') {
         data[key] = Number.parseFloat(value as string);
-      } else if (key === 'recordAudio' || key === 'preprocessText') {
+      } else if (key === 'recordAudio' || key === 'preprocessText' || key === 'streamMode') {
         data[key] = value === 'on';
       } else {
         data[key] = value as string;
@@ -36,14 +34,23 @@ export function Settings() {
     if (!formdata.has('preprocessText')) {
       data.preprocessText = false;
     }
+    if (!formdata.has('streamMode')) {
+      data.streamMode = false;
+    }
 
+    if (data.streamMode) {
+      setStreamMode(true);
+    } else {
+      setStreamMode(false);
+    }
+    
     setSettings(data as any);
     await chrome.storage.local.set(data);
     updateStatus('Settings saved!', false);
   }
 
   return (
-    <form id="settings-form" className="settings-panel">
+    <form id="settings-form" className="section-container">
       <div className="setting-group">
         <label htmlFor="voice">Voice</label>
         <select name="voice" value={settings.voice} onChange={saveSettings}>
@@ -68,18 +75,34 @@ export function Settings() {
         </div>
       </div>
 
-      <div className="setting-group checkbox-group">
-        <label className="checkbox-label">
-          <input type="checkbox" name="recordAudio" checked={settings.recordAudio} onChange={saveSettings} /> Save audio for download
-        </label>
+      <div className="setting-group">
+        <div className="checkbox-group">
+          <label htmlFor="recordAudio" className="checkbox-label">
+            Save audio for download
+          </label>
+          <input id="recordAudio" type="checkbox" name="recordAudio" checked={settings.recordAudio} onChange={saveSettings} />
+        </div>
         <div className="helper-text">Audio will be available to download after playback completes or when stopped.</div>
       </div>
 
-      <div className="setting-group checkbox-group">
-        <label className="checkbox-label">
-          <input type="checkbox" name="preprocessText" checked={settings.preprocessText} onChange={saveSettings} /> Pre-process text for TTS
-        </label>
+      <div className="setting-group ">
+        <div className="checkbox-group">
+          <label htmlFor="preprocessText" className="checkbox-label">
+            Pre-process text for TTS
+          </label>
+          <input id="preprocessText" type="checkbox" name="preprocessText" checked={settings.preprocessText} onChange={saveSettings} />
+        </div>
         <div className="helper-text">Removes markdown, cleans up URLs, and improves text for better speech output.</div>
+      </div>
+
+      <div className="setting-group ">
+        <div className="checkbox-group">
+          <label htmlFor="streamMode" className="checkbox-label">
+            Stream Audio
+          </label>
+          <input id="streamMode" type="checkbox" name="streamMode" checked={settings.streamMode} onChange={saveSettings} />
+        </div>
+        <div className="helper-text">Streams audio directly from the server instead of downloading the entire file first. Seek will be disabled.</div>
       </div>
 
       <div className="setting-group">

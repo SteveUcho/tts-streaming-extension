@@ -39,11 +39,11 @@ function updateControlButtons(state: string, currentAudioUrl: string | null, has
       controlsState.playDisabled = true;
       controlsState.pauseDisabled = false;
       break;
-    case 'ready':
     case 'paused':
     case 'stopped': {
       controlsState.playDisabled = false;
       controlsState.pauseDisabled = true;
+      controlsState.stopDisabled = true;
       controlsState.downloadDisabled = !currentAudioUrl;
       break;
     }
@@ -82,12 +82,7 @@ export function Controls() {
   }, [playState]);
 
   const handlePlayClick = async () => {
-    setPlayState('loading');
-    const newState = await audioPlayer.play();
-    setPlayState(newState);
-    if (newState === 'stopped') {
-      updateStatus('Error playing audio', true);
-    }
+    await audioPlayer.play();
   };
 
   const handlePauseClick = () => {
@@ -114,7 +109,7 @@ export function Controls() {
   };
 
   return (
-    <div className="control-panel">
+    <div className="control-panel section-container">
       <button className="btn" id="playBtn" title="Play" disabled={controlsState.playDisabled} onClick={handlePlayClick}>
         <i className="fas fa-play"></i>
       </button>

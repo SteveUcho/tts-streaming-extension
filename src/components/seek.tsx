@@ -1,15 +1,13 @@
 import { formatTime } from "@/utils/formatTime";
 import { useEffect, useState } from "react";
 import { audioPlayer as audioPlayerInstance } from "@/popup/audioPlayer";
-import { playStateAtom } from "@/utils/atoms";
+import { playStateAtom, streamModeAtom } from "@/utils/atoms";
 import { useAtomValue } from "jotai";
 
 function isDisabled(state: string): boolean {
   switch (state) {
     case 'loading':
       return true;
-    case 'ready':
-      return false;
     case 'playing':
       return false;
     case 'paused':
@@ -23,6 +21,8 @@ function isDisabled(state: string): boolean {
 
 export function Seek() {
   const playState = useAtomValue(playStateAtom);
+  const streamMode = useAtomValue(streamModeAtom);
+
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isSeeking, setIsSeeking] = useState(false);
@@ -38,18 +38,20 @@ export function Seek() {
   }, [playState]);
 
   useEffect(() => {
-    if (playState !== 'playing') return;
-    const interval = setInterval(async () => {
-      const audioPlayer = audioPlayerInstance;
-
-      const timeInfo = await audioPlayer.getTimeInfo();
-      if (timeInfo && !isSeeking) {
-        setDuration(timeInfo.duration);
-        setCurrentTime(timeInfo.currentTime);
-      }
-    }, 500);
+    updateTimeInfo();
+    if (playState !== 'playing' || isSeeking) return;
+    const interval = setInterval(updateTimeInfo, 200);
     return () => clearInterval(interval);
   }, [isSeeking, playState]);
+
+  const updateTimeInfo = async () => {
+    const audioPlayer = audioPlayerInstance;
+    const timeInfo = await audioPlayer.getTimeInfo();
+    if (timeInfo) {
+      setDuration(timeInfo.duration);
+      setCurrentTime(timeInfo.currentTime);
+    }
+  };
 
   // When user starts seeking
   const handleMouseDown = () => {
@@ -69,8 +71,16 @@ export function Seek() {
     setIsSeeking(false);
   };
 
+  if (streamMode) {
+    return (
+      <div className="section-container" style={{ textAlign: "center" }}>
+        Streaming Mode: On
+      </div>
+    );
+  }
+
   return (
-    <div className="seek-container">
+    <div className="section-container">
       <div className="seek-bar-wrapper">
         <input type="range" id="seekBar" min="0" step="0.1"
           disabled={isSeekDisabled}
