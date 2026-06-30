@@ -6,6 +6,7 @@ based off previous work done by @phildougherty https://github.com/phildougherty/
 
 - This extension is built with React and Vite instead of plain JavaScript
 - Uses CRXJS for Chrome extension development
+- Adds streaming mode that starts playing a lot faster on longer texts
 - Only plays user highlight selection
 - Fixes issues with the original extension
     - no longer randomly stops working
