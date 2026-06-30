@@ -106,7 +106,6 @@ async function processAndReadText(text: string, settings: LocalSettings) {
     }
     // If recording is enabled, send URL back for download
     if (settings.recordAudio) {
-      console.log('Audio chunks:', audioChunks);
       chrome.runtime.sendMessage({
         type: 'recordingComplete', audioChunks: audioChunks.map(chunk => Array.from(new Uint8Array(chunk)))
       });
@@ -152,8 +151,6 @@ function getPlayerState(streamMode: boolean): string {
 
 // Handle messages from the background script
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  console.log('Offscreen received message:', message.type);
-
   switch (message.type) {
     case 'play':
       currentPlayerState = 'playing';

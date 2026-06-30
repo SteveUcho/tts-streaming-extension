@@ -4,7 +4,6 @@ export class AudioPlayer {
   async play() {
     try {
       const state = await this.getState();
-      console.log('Current state:', state);
 
       if (state === 'paused') {
         this.resume();
@@ -12,13 +11,11 @@ export class AudioPlayer {
       }
 
       this.audioUrl = null;
-      console.log('Audio URL cleared');
 
       // Start streaming audio
       chrome.runtime.sendMessage({
         type: 'startStreamingBackground',
       });
-      console.log('Streaming started');
 
     } catch (error) {
       console.error('Error playing audio:', error);

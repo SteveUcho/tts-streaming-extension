@@ -12,7 +12,6 @@ export default function App() {
   const setPlayState = useSetAtom(playStateAtom)
 
   const handleBackgroundMessage = (message: any) => {
-    console.log('Received message from background:', message);
     switch (message.type) {
       case 'playerStateUpdate':
         setPlayState(message.state);
