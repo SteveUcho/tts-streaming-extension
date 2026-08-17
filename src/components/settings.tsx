@@ -1,17 +1,13 @@
 import { updateStatus } from "@/utils/dom";
 import { useEffect, useState } from "react";
 import { DEFAULT_SETTINGS } from "@/constants";
-import { useSetAtom } from "jotai";
-import { streamModeAtom } from "@/utils/atoms";
 
 export function Settings() {
-  const setStreamMode = useSetAtom(streamModeAtom);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 
   useEffect(() => {
     chrome.storage.local.get(DEFAULT_SETTINGS as any).then((result) => {
       setSettings(result as any);
-      setStreamMode(result.streamMode as boolean ?? false);
     });
   }, []);
 
@@ -28,21 +24,11 @@ export function Settings() {
         data[key] = value as string;
       }
     }
-    if (!formdata.has('recordAudio')) {
-      data.recordAudio = false;
-    }
-    if (!formdata.has('preprocessText')) {
-      data.preprocessText = false;
-    }
-    if (!formdata.has('streamMode')) {
-      data.streamMode = false;
-    }
-
-    if (data.streamMode) {
-      setStreamMode(true);
-    } else {
-      setStreamMode(false);
-    }
+    Object.entries(DEFAULT_SETTINGS).forEach(([key, value]) => {
+      if (typeof value === 'boolean' && !formdata.has(key)) {
+        data[key] = false;
+      }
+    });
     
     setSettings(data as any);
     await chrome.storage.local.set(data);
@@ -103,6 +89,16 @@ export function Settings() {
           <input id="streamMode" type="checkbox" name="streamMode" checked={settings.streamMode} onChange={saveSettings} />
         </div>
         <div className="helper-text">Streams audio directly from the server instead of downloading the entire file first. Seek will be disabled.</div>
+      </div>
+
+      <div className="setting-group ">
+        <div className="checkbox-group">
+          <label htmlFor="quickAction" className="checkbox-label">
+            Quick Action
+          </label>
+          <input id="quickAction" type="checkbox" name="quickAction" checked={settings.quickAction} onChange={saveSettings} />
+        </div>
+        <div className="helper-text">Shows a quick action button when text is selected.</div>
       </div>
 
       <div className="setting-group">

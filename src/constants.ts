@@ -5,6 +5,7 @@ export interface LocalSettings {
   recordAudio: boolean;
   preprocessText: boolean;
   streamMode: boolean;
+  quickAction: boolean;
 }
 
 export const DEFAULT_SETTINGS: LocalSettings = {
@@ -13,5 +14,6 @@ export const DEFAULT_SETTINGS: LocalSettings = {
   speed: 1.0,
   recordAudio: false,
   preprocessText: true,
-  streamMode: false
+  streamMode: false,
+  quickAction: true,
 };

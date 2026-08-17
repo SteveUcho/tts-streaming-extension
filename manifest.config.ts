@@ -1,5 +1,5 @@
 import { defineManifest } from '@crxjs/vite-plugin'
-import pkg from './package.json'
+import pkg from './package.json' with { type: 'json' }
 
 export default defineManifest({
   manifest_version: 3,
@@ -16,7 +16,7 @@ export default defineManifest({
     default_popup: 'src/popup/index.html'
   },
   background: {
-    service_worker: "background.js"
+    service_worker: "src/background.js"
   },
   permissions: [
     "activeTab",
@@ -30,4 +30,10 @@ export default defineManifest({
     "http://*/*",
     "https://*/*"
   ],
+  content_scripts: [
+    {
+      matches: ["<all_urls>"],
+      js: ["src/content-script/content.js"]
+    }
+  ]
 })
