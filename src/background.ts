@@ -90,7 +90,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 // Handle messages from popup or offscreen document
 chrome.runtime.onMessage.addListener((message) => {
   if (message.type === 'startStreamingBackground') {
-    playText();
+    playText(message.text);
   }
 });
 

@@ -6,11 +6,10 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "moduleDetection": "force",
     "useDefineForClassFields": true,
-    "baseUrl": ".",
     "module": "ESNext",
     "moduleResolution": "bundler",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     },
     "types": ["vite/client", "@crxjs/vite-plugin/client", "chrome", "node"],
     "allowImportingTsExtensions": true,
@@ -23,5 +22,5 @@
     "skipLibCheck": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src", "background.ts"]
+  "include": ["src"]
 }

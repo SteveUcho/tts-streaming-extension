@@ -1,7 +1,7 @@
 import { formatTime } from "@/utils/formatTime";
 import { useEffect, useState } from "react";
 import { audioPlayer as audioPlayerInstance } from "@/popup/audioPlayer";
-import { playStateAtom, streamModeAtom } from "@/utils/atoms";
+import { playStateAtom } from "@/utils/atoms";
 import { useAtomValue } from "jotai";
 
 function isDisabled(state: string): boolean {
@@ -21,13 +21,29 @@ function isDisabled(state: string): boolean {
 
 export function Seek() {
   const playState = useAtomValue(playStateAtom);
-  const streamMode = useAtomValue(streamModeAtom);
 
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isSeeking, setIsSeeking] = useState(false);
+  const [streamMode, setStreamMode] = useState(false);
 
   const isSeekDisabled = isDisabled(playState);
+
+  useEffect(() => {
+    chrome.storage.local.get('streamMode').then((result) => {
+      setStreamMode(result.streamMode as boolean ?? false);
+    });
+    
+    chrome.storage.onChanged.addListener((changes) => {
+      if (changes.streamMode) {
+        setStreamMode(changes.streamMode.newValue as boolean);
+      }
+    });
+    
+    return () => {
+      chrome.storage.onChanged.removeListener(() => {});
+    };
+  }, []);
 
   useEffect(() => {
     if (playState === 'stopped') {
